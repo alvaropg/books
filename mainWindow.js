@@ -12,14 +12,26 @@ const MainWindow = new Lang.Class({
 
     _init: function(app) {
         this.parent({ application: app,
-                      hide_titlebar_when_maximized: true,
                       title: "Books" });
+
+        let newAction = new Gio.SimpleAction({ "name": 'new' });
+        newAction.connect('activate', Lang.bind(this,
+                                                function() {
+                                                    this._new_book();
+                                                    }));
+        this.application.add_action(newAction);
 
         this._box = new Gtk.Box({ orientation: Gtk.Orientation.VERTICAL,
                                   visible: true });
 
-        this._populate_toolbar();
-        this._box.add(this._toolbar);
+        if (Gtk.MINOR_VERSION < 10) {
+            this._populate_toolbar();
+            this._box.add(this._toolbar);
+            this.hide_titlebar_when_maximized = true;
+        } else {
+            this._populate_headerbar();
+            this.set_titlebar(this._headerbar);
+        }
 
         this._populate_treeview();
         this._box.add(this._scroll);
@@ -39,16 +51,19 @@ const MainWindow = new Lang.Class({
         this._toolbar.add(separator);
         separator.set_expand(true);
 
-        let newAction = new Gio.SimpleAction({ "name": 'new' });
-        newAction.connect('activate', Lang.bind(this,
-                                                function() {
-                                                    this._new_book();
-                                                    }));
-        this.application.add_action(newAction);
-
         this._newButton =  Gtk.ToolButton.new_from_stock(Gtk.STOCK_NEW);
         this._newButton.is_important = true;
         this._toolbar.add(this._newButton);
+        this._newButton.action_name = "app.new";
+    },
+
+    _populate_headerbar: function() {
+        this._headerbar = new Gtk.HeaderBar({ title: 'Books',
+                                              show_close_button: true });
+
+        this._newButton = new Gtk.Button({ label: 'New',
+                                           valign: Gtk.Align.CENTER });
+        this._headerbar.pack_start(this._newButton);
         this._newButton.action_name = "app.new";
     },
 
